@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mission Control</title>
+
+    <meta http-equiv="refresh" content="3">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <header>
+            <h1>MISSION CONTROL</h1>
+            <p>Spacecraft Telemetry Dashboard</p>
+        </header>
+
+        <div class="telemetry-grid">
+
+            <div class="card">
+    <h2>Battery</h2>
+    <p>{{ telemetry.battery }}%</p>
+
+    <div class="battery-bar">
+        <div
+    class="battery-fill
+    {% if telemetry.battery < 75 %}
+        battery-low
+    {% elif telemetry.battery < 85 %}
+        battery-medium
+    {% else %}
+        battery-good
+    {% endif %}"
+    style="width: {{ telemetry.battery }}%;">
+</div>
+    </div>
+</div>
+
+            <div class="card">
+                <h2>Temperature</h2>
+                <p>{{ telemetry.temperature }}°C</p>
+            </div>
+
+            <div class="card">
+                <h2>Altitude</h2>
+                <p>{{ telemetry.altitude }} km</p>
+            </div>
+
+            <div class="card">
+                <h2>Mission Mode</h2>
+                <p>{{ telemetry.mode }}</p>
+            </div>
+
+            <div class="card status-card {{ telemetry.status|lower|replace(' ', '-') }}">
+    <h2>System Status</h2>
+    <p>{{ telemetry.status }}</p>
+</div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
