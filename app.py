@@ -1,10 +1,15 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for
 import random
 from datetime import datetime
 
 app = Flask(__name__)
 
+mission_start = datetime.now()
+
 event_log = []
+telemetry_history = []
+
+current_mode = "Science"
 
 
 def add_event(message, event_type="INFO"):
@@ -30,19 +35,31 @@ def check_subsystems(battery, temperature):
 
     if battery < 75:
         subsystems["EPS"] = "Warning"
-        add_event("EPS warning — battery below threshold", "WARNING")
+        add_event(
+            "EPS warning — battery below threshold",
+            "WARNING"
+        )
 
     if temperature > 32:
         subsystems["OBC"] = "Warning"
-        add_event("OBC warning — high temperature", "WARNING")
+        add_event(
+            "OBC warning — high temperature",
+            "WARNING"
+        )
 
     if random.randint(1, 10) == 1:
         subsystems["COMMS"] = "Warning"
-        add_event("COMMS warning — simulated signal fault", "WARNING")
+        add_event(
+            "COMMS warning — simulated signal fault",
+            "WARNING"
+        )
 
     if random.randint(1, 12) == 1:
         subsystems["ADCS"] = "Warning"
-        add_event("ADCS warning — attitude fault detected", "WARNING")
+        add_event(
+            "ADCS warning — attitude fault detected",
+            "WARNING"
+        )
 
     return subsystems
 
@@ -52,7 +69,6 @@ def home():
     battery = random.randint(70, 100)
     temperature = random.randint(18, 35)
     altitude = random.randint(400, 425)
-    mode = random.choice(["Science", "Communication", "Standby"])
 
     if battery < 75:
         status = "Low Battery"
@@ -65,20 +81,63 @@ def home():
         "battery": battery,
         "temperature": temperature,
         "altitude": altitude,
-        "mode": mode,
+        "mode": current_mode,
         "status": status
     }
 
-    subsystems = check_subsystems(battery, temperature)
+    subsystems = check_subsystems(
+        battery,
+        temperature
+    )
+
+    telemetry_history.append({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "battery": battery,
+        "temperature": temperature,
+        "altitude": altitude
+    })
+
+    if len(telemetry_history) > 20:
+        telemetry_history.pop(0)
 
     add_event("Telemetry packet received")
+
+    elapsed = datetime.now() - mission_start
+
+    total_seconds = int(elapsed.total_seconds())
+
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+
+    mission_time = f"{hours:02}:{minutes:02}:{seconds:02}"
 
     return render_template(
         "index.html",
         telemetry=telemetry,
         subsystems=subsystems,
-        event_log=event_log
+        event_log=event_log,
+        history=telemetry_history,
+        mission_time=mission_time,
+        current_mode=current_mode
     )
+
+
+@app.route("/control", methods=["POST"])
+def control():
+    global current_mode
+
+    new_mode = request.form.get("mode")
+
+    if new_mode in ["Science", "Communication", "Standby"]:
+        current_mode = new_mode
+
+        add_event(
+            f"Command accepted — switched to {new_mode} mode",
+            "COMMAND"
+        )
+
+    return redirect(url_for("home"))
 
 
 if __name__ == "__main__":

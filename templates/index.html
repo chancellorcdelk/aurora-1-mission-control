@@ -6,158 +6,322 @@
 
     <meta http-equiv="refresh" content="3">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>Mission Control</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 
 <body>
 
-    <div class="dashboard">
+<div class="dashboard">
 
-        <header>
-            <h1>MISSION CONTROL</h1>
-            <p>Spacecraft Telemetry Dashboard</p>
-        </header>
+    <header>
+    <div>
+        <h1>AURORA-1 MISSION CONTROL</h1>
+        <p>Spacecraft Command & Telemetry System</p>
+    </div>
+
+    <div class="mission-clock">
+        <span>MISSION ELAPSED TIME</span>
+        <strong>{{ mission_time }}</strong>
+    </div>
+</header>
 
 
-        <!-- TELEMETRY CARDS -->
-        <div class="telemetry-grid">
+    <!-- TELEMETRY -->
 
-            <!-- Battery -->
-            <div class="card">
+    <div class="telemetry-grid">
 
-                <h2>Battery</h2>
+        <div class="card">
 
-                <p>{{ telemetry.battery }}%</p>
+            <h2>Battery</h2>
 
-                <div class="battery-bar">
+            <p>{{ telemetry.battery }}%</p>
 
-                    <div
-                        class="battery-fill
-                        {% if telemetry.battery < 75 %}
-                            battery-low
-                        {% elif telemetry.battery < 85 %}
-                            battery-medium
-                        {% else %}
-                            battery-good
-                        {% endif %}"
+            <div class="battery-bar">
 
-                        style="width: {{ telemetry.battery }}%;">
-                    </div>
+                <div
+                    class="battery-fill
 
+                    {% if telemetry.battery < 75 %}
+                        battery-low
+                    {% elif telemetry.battery < 85 %}
+                        battery-medium
+                    {% else %}
+                        battery-good
+                    {% endif %}"
+
+                    style="width: {{ telemetry.battery }}%;">
                 </div>
 
             </div>
 
-
-            <!-- Temperature -->
-            <div class="card">
-
-                <h2>Temperature</h2>
-
-                <p>{{ telemetry.temperature }}°C</p>
-
-            </div>
-
-
-            <!-- Altitude -->
-            <div class="card">
-
-                <h2>Altitude</h2>
-
-                <p>{{ telemetry.altitude }} km</p>
-
-            </div>
-
-
-            <!-- Mission Mode -->
-            <div class="card">
-
-                <h2>Mission Mode</h2>
-
-                <p>{{ telemetry.mode }}</p>
-
-            </div>
-
-
-            <!-- System Status -->
-            <div class="card status-card {{ telemetry.status|lower|replace(' ', '-') }}">
-
-                <h2>System Status</h2>
-
-                <p>{{ telemetry.status }}</p>
-
-            </div>
-
         </div>
 
 
-        <!-- SUBSYSTEM HEALTH -->
-        <div class="subsystem-section">
-
-            <h2>Subsystem Health</h2>
-
-            <div class="subsystem-panel">
-
-                {% for name, status in subsystems.items() %}
-
-                    <div class="subsystem-row">
-
-                        <span class="subsystem-name">
-                            {{ name }}
-                        </span>
-
-                        <span class="subsystem-status {{ status|lower }}">
-                            {{ status }}
-                        </span>
-
-                    </div>
-
-                {% endfor %}
-
-            </div>
-
+        <div class="card">
+            <h2>Temperature</h2>
+            <p>{{ telemetry.temperature }}°C</p>
         </div>
 
 
-        <!-- MISSION EVENT LOG -->
-        <div class="event-section">
-
-            <h2>Mission Event Log</h2>
-
-            <div class="event-panel">
-
-                {% for event in event_log %}
-
-                    <div class="event-row">
-
-                        <span class="event-time">
-                            {{ event.time }}
-                        </span>
-
-                        <span class="event-type {{ event.type|lower }}">
-                            {{ event.type }}
-                        </span>
-
-                        <span class="event-message">
-                            {{ event.message }}
-                        </span>
-
-                    </div>
-
-                {% endfor %}
-
-            </div>
-
+        <div class="card">
+            <h2>Altitude</h2>
+            <p>{{ telemetry.altitude }} km</p>
         </div>
 
+
+        <div class="card">
+            <h2>Mission Mode</h2>
+            <p>{{ telemetry.mode }}</p>
+        </div>
+
+
+        <div class="card status-card
+            {{ telemetry.status|lower|replace(' ', '-') }}">
+
+            <h2>System Status</h2>
+            <p>{{ telemetry.status }}</p>
+
+        </div>
 
     </div>
+
+
+    <!-- MISSION CONTROLS -->
+
+    <div class="control-section">
+
+        <h2>Mission Controls</h2>
+
+        <div class="control-panel">
+
+            <form method="POST"
+                  action="{{ url_for('control') }}">
+
+                <button
+    type="submit"
+    name="mode"
+    value="Science"
+    class="{% if current_mode == 'Science' %}active-control{% endif %}">
+    Science Mode
+</button>
+
+<button
+    type="submit"
+    name="mode"
+    value="Communication"
+    class="{% if current_mode == 'Communication' %}active-control{% endif %}">
+    Communication Mode
+</button>
+
+<button
+    type="submit"
+    name="mode"
+    value="Standby"
+    class="{% if current_mode == 'Standby' %}active-control{% endif %}">
+    Standby Mode
+</button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- SUBSYSTEMS -->
+
+    <div class="subsystem-section">
+
+        <h2>Subsystem Health</h2>
+
+        <div class="subsystem-panel">
+
+            {% for name, status in subsystems.items() %}
+
+                <div class="subsystem-row">
+
+                    <span class="subsystem-name">
+                        {{ name }}
+                    </span>
+
+                    <span class="subsystem-status
+                        {{ status|lower }}">
+
+                        {{ status }}
+
+                    </span>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+    <!-- TELEMETRY HISTORY -->
+
+    <div class="chart-section">
+
+        <h2>Telemetry History</h2>
+
+        <div class="chart-grid">
+
+            <div class="chart-card">
+                <h3>Battery History</h3>
+                <canvas id="batteryChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Temperature History</h3>
+                <canvas id="temperatureChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Altitude History</h3>
+                <canvas id="altitudeChart"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- EVENT LOG -->
+
+    <div class="event-section">
+
+        <h2>Mission Event Log</h2>
+
+        <div class="event-panel">
+
+            {% for event in event_log %}
+
+                <div class="event-row">
+
+                    <span class="event-time">
+                        {{ event.time }}
+                    </span>
+
+                    <span class="event-type
+                        {{ event.type|lower }}">
+
+                        {{ event.type }}
+
+                    </span>
+
+                    <span class="event-message">
+                        {{ event.message }}
+                    </span>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const historyData = {{ history | tojson }};
+
+    const labels =
+        historyData.map(item => item.time);
+
+    const batteryData =
+        historyData.map(item => item.battery);
+
+    const temperatureData =
+        historyData.map(item => item.temperature);
+
+    const altitudeData =
+        historyData.map(item => item.altitude);
+
+
+    new Chart(
+        document.getElementById("batteryChart"),
+        {
+            type: "line",
+
+            data: {
+                labels: labels,
+
+                datasets: [{
+                    label: "Battery %",
+                    data: batteryData,
+                    borderWidth: 2,
+                    tension: 0.3
+                }]
+            },
+
+            options: {
+                responsive: true
+            }
+        }
+    );
+
+
+    new Chart(
+        document.getElementById("temperatureChart"),
+        {
+            type: "line",
+
+            data: {
+                labels: labels,
+
+                datasets: [{
+                    label: "Temperature °C",
+                    data: temperatureData,
+                    borderWidth: 2,
+                    tension: 0.3
+                }]
+            },
+
+            options: {
+                responsive: true
+            }
+        }
+    );
+
+
+    new Chart(
+        document.getElementById("altitudeChart"),
+        {
+            type: "line",
+
+            data: {
+                labels: labels,
+
+                datasets: [{
+                    label: "Altitude km",
+                    data: altitudeData,
+                    borderWidth: 2,
+                    tension: 0.3
+                }]
+            },
+
+            options: {
+                responsive: true
+            }
+        }
+    );
+
+</script>
+
 
 </body>
 
