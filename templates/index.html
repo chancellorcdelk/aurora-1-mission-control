@@ -1,13 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Mission Control</title>
+    <meta charset="UTF-8">
 
     <meta http-equiv="refresh" content="3">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mission Control</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 
 <body>
 
@@ -18,50 +24,141 @@
             <p>Spacecraft Telemetry Dashboard</p>
         </header>
 
+
+        <!-- TELEMETRY CARDS -->
         <div class="telemetry-grid">
 
+            <!-- Battery -->
             <div class="card">
-    <h2>Battery</h2>
-    <p>{{ telemetry.battery }}%</p>
 
-    <div class="battery-bar">
-        <div
-    class="battery-fill
-    {% if telemetry.battery < 75 %}
-        battery-low
-    {% elif telemetry.battery < 85 %}
-        battery-medium
-    {% else %}
-        battery-good
-    {% endif %}"
-    style="width: {{ telemetry.battery }}%;">
-</div>
-    </div>
-</div>
+                <h2>Battery</h2>
 
+                <p>{{ telemetry.battery }}%</p>
+
+                <div class="battery-bar">
+
+                    <div
+                        class="battery-fill
+                        {% if telemetry.battery < 75 %}
+                            battery-low
+                        {% elif telemetry.battery < 85 %}
+                            battery-medium
+                        {% else %}
+                            battery-good
+                        {% endif %}"
+
+                        style="width: {{ telemetry.battery }}%;">
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Temperature -->
             <div class="card">
+
                 <h2>Temperature</h2>
+
                 <p>{{ telemetry.temperature }}°C</p>
+
             </div>
 
+
+            <!-- Altitude -->
             <div class="card">
+
                 <h2>Altitude</h2>
+
                 <p>{{ telemetry.altitude }} km</p>
+
             </div>
 
+
+            <!-- Mission Mode -->
             <div class="card">
+
                 <h2>Mission Mode</h2>
+
                 <p>{{ telemetry.mode }}</p>
+
             </div>
 
+
+            <!-- System Status -->
             <div class="card status-card {{ telemetry.status|lower|replace(' ', '-') }}">
-    <h2>System Status</h2>
-    <p>{{ telemetry.status }}</p>
-</div>
+
+                <h2>System Status</h2>
+
+                <p>{{ telemetry.status }}</p>
+
+            </div>
 
         </div>
+
+
+        <!-- SUBSYSTEM HEALTH -->
+        <div class="subsystem-section">
+
+            <h2>Subsystem Health</h2>
+
+            <div class="subsystem-panel">
+
+                {% for name, status in subsystems.items() %}
+
+                    <div class="subsystem-row">
+
+                        <span class="subsystem-name">
+                            {{ name }}
+                        </span>
+
+                        <span class="subsystem-status {{ status|lower }}">
+                            {{ status }}
+                        </span>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- MISSION EVENT LOG -->
+        <div class="event-section">
+
+            <h2>Mission Event Log</h2>
+
+            <div class="event-panel">
+
+                {% for event in event_log %}
+
+                    <div class="event-row">
+
+                        <span class="event-time">
+                            {{ event.time }}
+                        </span>
+
+                        <span class="event-type {{ event.type|lower }}">
+                            {{ event.type }}
+                        </span>
+
+                        <span class="event-message">
+                            {{ event.message }}
+                        </span>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
 
     </div>
 
 </body>
+
 </html>
