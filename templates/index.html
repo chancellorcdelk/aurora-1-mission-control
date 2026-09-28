@@ -70,7 +70,17 @@
             <h2>Temperature</h2>
             <p>{{ telemetry.temperature }}°C</p>
         </div>
+<div class="card">
+    <h2>Hardware Link</h2>
 
+    {% if telemetry.arduino_connected %}
+        <p>CONNECTED</p>
+        <small>Arduino input: {{ telemetry.sensor_value }}</small>
+    {% else %}
+        <p>SIMULATION</p>
+        <small>Arduino unavailable</small>
+    {% endif %}
+</div>
 
         <div class="card">
             <h2>Altitude</h2>

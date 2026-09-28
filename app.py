@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for
 import random
+import serial
+import threading
+import time
 from datetime import datetime
 
 app = Flask(__name__)
@@ -10,6 +13,12 @@ event_log = []
 telemetry_history = []
 
 current_mode = "Science"
+
+sensor_value = None
+arduino_connected = False
+
+ARDUINO_PORT = "/dev/cu.usbmodem90706925BDF42"
+BAUD_RATE = 9600
 
 
 def add_event(message, event_type="INFO"):
@@ -23,6 +32,51 @@ def add_event(message, event_type="INFO"):
 
     if len(event_log) > 8:
         event_log.pop()
+
+
+def read_arduino():
+    global sensor_value, arduino_connected
+
+    disconnect_reported = False
+
+    while True:
+        try:
+            with serial.Serial(
+                ARDUINO_PORT,
+                BAUD_RATE,
+                timeout=1
+            ) as arduino:
+                time.sleep(2)
+
+                arduino_connected = True
+                disconnect_reported = False
+
+                add_event(
+                    "Arduino hardware telemetry link established"
+                )
+
+                while True:
+                    reading = (
+                        arduino.readline()
+                        .decode("utf-8")
+                        .strip()
+                    )
+
+                    if reading:
+                        sensor_value = int(reading)
+
+        except (serial.SerialException, OSError, ValueError):
+            arduino_connected = False
+            sensor_value = None
+
+            if not disconnect_reported:
+                add_event(
+                    "Arduino telemetry link unavailable",
+                    "WARNING"
+                )
+                disconnect_reported = True
+
+            time.sleep(2)
 
 
 def check_subsystems(battery, temperature):
@@ -43,7 +97,7 @@ def check_subsystems(battery, temperature):
     if temperature > 32:
         subsystems["OBC"] = "Warning"
         add_event(
-            "OBC warning — high temperature",
+            "OBC warning — hardware temperature above threshold",
             "WARNING"
         )
 
@@ -67,8 +121,17 @@ def check_subsystems(battery, temperature):
 @app.route("/")
 def home():
     battery = random.randint(70, 100)
-    temperature = random.randint(18, 35)
     altitude = random.randint(400, 425)
+
+    if sensor_value is not None:
+        temperature = round(
+            20 + (sensor_value / 1023) * 24,
+            1
+        )
+        telemetry_source = "Arduino Hardware"
+    else:
+        temperature = random.randint(18, 35)
+        telemetry_source = "Simulation"
 
     if battery < 75:
         status = "Low Battery"
@@ -82,7 +145,10 @@ def home():
         "temperature": temperature,
         "altitude": altitude,
         "mode": current_mode,
-        "status": status
+        "status": status,
+        "sensor_value": sensor_value,
+        "source": telemetry_source,
+        "arduino_connected": arduino_connected
     }
 
     subsystems = check_subsystems(
@@ -100,10 +166,11 @@ def home():
     if len(telemetry_history) > 20:
         telemetry_history.pop(0)
 
-    add_event("Telemetry packet received")
+    add_event(
+        f"Telemetry packet received from {telemetry_source}"
+    )
 
     elapsed = datetime.now() - mission_start
-
     total_seconds = int(elapsed.total_seconds())
 
     hours = total_seconds // 3600
@@ -129,7 +196,11 @@ def control():
 
     new_mode = request.form.get("mode")
 
-    if new_mode in ["Science", "Communication", "Standby"]:
+    if new_mode in [
+        "Science",
+        "Communication",
+        "Standby"
+    ]:
         current_mode = new_mode
 
         add_event(
@@ -141,4 +212,13 @@ def control():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    arduino_thread = threading.Thread(
+        target=read_arduino,
+        daemon=True
+    )
+    arduino_thread.start()
+
+    app.run(
+        debug=True,
+        use_reloader=False
+    )
