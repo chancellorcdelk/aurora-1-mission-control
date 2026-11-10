@@ -6,7 +6,7 @@
 
     <script>
     setInterval(() => {
-        if (!window.adcsReplayPlaying) {
+        if (!window.adcsReplayPlaying && !window.adcsLiveMonitoring) {
             window.location.reload();
         }
     }, 3000);
@@ -208,7 +208,12 @@
     <button type="button" id="adcsReplayButton">Play ADCS replay</button>
     <canvas id="adcsReplayChart"></canvas>
 </div>
-
+<div class="chart-card">
+    <h3>ADCS Pointing Angle · Incoming Telemetry</h3>
+    <button type="button" id="adcsLiveButton">Start monitoring</button>
+    <p id="adcsLiveStatus" role="status">Monitoring off</p>
+    <canvas id="adcsLiveChart"></canvas>
+</div>
         </div>
 
     </div>
@@ -418,7 +423,84 @@ fetch("/api/adcs/replay")
     })
     .catch(error => console.error("ADCS chart:", error));
 </script>
+<script>
+(() => {
+    const button = document.getElementById("adcsLiveButton");
+    const status = document.getElementById("adcsLiveStatus");
+    const chart = new Chart(document.getElementById("adcsLiveChart"), {
+        type: "line",
+        data: {
+            datasets: [{
+                label: "Incoming pointing angle",
+                data: [],
+                borderColor: "#34d399",
+                pointRadius: 0
+            }]
+        },
+        options: {
+            animation: false,
+            scales: {
+                x: { type: "linear", title: { display: true, text: "Simulation time (s)" } },
+                y: { suggestedMin: 0, suggestedMax: 10, title: { display: true, text: "Pointing angle (°)" } }
+            }
+        }
+    });
 
+    let session = 0;
+
+    button.addEventListener("click", () => {
+        const currentSession = ++session;
+        const monitoring = !window.adcsLiveMonitoring;
+        window.adcsLiveMonitoring = monitoring;
+        button.textContent = monitoring ? "Stop monitoring" : "Start monitoring";
+        status.textContent = monitoring ? "Waiting for new samples…" : "Monitoring off";
+        if (!monitoring) return;
+
+        let previous = null;
+        let lastChange = null;
+
+        async function poll() {
+            if (currentSession !== session) return;
+
+            try {
+                const response = await fetch("/api/adcs/live", { cache: "no-store" });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const samples = await response.json();
+                if (currentSession !== session) return;
+
+                const snapshot = JSON.stringify(samples);
+                if (previous !== null && snapshot !== previous && samples.length) {
+                    lastChange = performance.now();
+                }
+
+                if (snapshot !== previous) {
+                    // If the sender restarted at zero, show only the newest run.
+                    let first = samples.length ? samples.length - 1 : 0;
+                    while (first > 0 && samples[first - 1].time_s <= samples[first].time_s) {
+                        first--;
+                    }
+                    chart.data.datasets[0].data = samples.slice(first).map(sample => ({
+                        x: sample.time_s,
+                        y: sample.actual_angle_deg
+                    }));
+                    chart.update("none");
+                    previous = snapshot;
+                }
+
+                status.textContent = lastChange === null ? "Waiting for new samples…"
+                    : performance.now() - lastChange > 3000 ? "Stale · no new samples"
+                    : "Receiving telemetry";
+            } catch {
+                if (currentSession === session) status.textContent = "Telemetry endpoint unavailable";
+            } finally {
+                if (currentSession === session) setTimeout(poll, 500);
+            }
+        }
+
+        poll();
+    });
+})();
+</script>
 </body>
 
 </html>

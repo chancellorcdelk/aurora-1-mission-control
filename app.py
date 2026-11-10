@@ -227,6 +227,33 @@ def adcs_replay():
         ]
 
     return jsonify(samples)
+from collections import deque
+from math import isfinite
+from threading import Lock
+from flask import jsonify, request
+
+adcs_received = deque(maxlen=300)
+adcs_lock = Lock()
+
+@app.route("/api/adcs/live", methods=["GET", "POST"])
+def adcs_live():
+    if request.method == "GET":
+        with adcs_lock:
+            return jsonify(list(adcs_received))
+
+    packet = request.get_json(silent=True)
+    try:
+        time_s = float(packet["time_s"])
+        angle_deg = float(packet["actual_angle_deg"])
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return jsonify(error="Send numeric time_s and actual_angle_deg"), 400
+
+    if not isfinite(time_s) or not isfinite(angle_deg) or time_s < 0:
+        return jsonify(error="Invalid time or angle"), 400
+
+    with adcs_lock:
+        adcs_received.append({"time_s": time_s, "actual_angle_deg": angle_deg})
+    return jsonify(received=True), 201
 if __name__ == "__main__":
     arduino_thread = threading.Thread(
         target=read_arduino,
