@@ -210,7 +210,23 @@ def control():
 
     return redirect(url_for("home"))
 
+@app.route("/api/adcs/replay")
+def adcs_replay():
+    import csv
+    from pathlib import Path
+    from flask import jsonify
 
+    csv_path = Path(__file__).with_name("aurora1_angle_telemetry.csv")
+    with csv_path.open(newline="", encoding="utf-8") as file:
+        samples = [
+            {
+                "time_s": float(row["time_s"]),
+                "actual_angle_deg": float(row["actual_angle_deg"]),
+            }
+            for row in csv.DictReader(file)
+        ]
+
+    return jsonify(samples)
 if __name__ == "__main__":
     arduino_thread = threading.Thread(
         target=read_arduino,

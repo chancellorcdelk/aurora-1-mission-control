@@ -198,9 +198,9 @@
             </div>
 
             <div class="chart-card">
-                <h3>Altitude History</h3>
-                <canvas id="altitudeChart"></canvas>
-            </div>
+    <h3>ADCS Pointing Angle · Recorded Run</h3>
+    <canvas id="adcsReplayChart"></canvas>
+</div>
 
         </div>
 
@@ -331,7 +331,37 @@
     );
 
 </script>
-
+<script>
+fetch("/api/adcs/replay")
+    .then(response => {
+        if (!response.ok) throw new Error(`Telemetry request failed: ${response.status}`);
+        return response.json();
+    })
+    .then(samples => {
+        new Chart(document.getElementById("adcsReplayChart"), {
+            type: "line",
+            data: {
+                datasets: [{
+                    label: "Actual pointing angle",
+                    data: samples.map(sample => ({
+                        x: sample.time_s,
+                        y: sample.actual_angle_deg
+                    })),
+                    borderColor: "#38bdf8",
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                animation: false,
+                scales: {
+                    x: { type: "linear", title: { display: true, text: "Simulation time (s)" } },
+                    y: { title: { display: true, text: "Pointing angle (°)" } }
+                }
+            }
+        });
+    })
+    .catch(error => console.error("ADCS chart:", error));
+</script>
 
 </body>
 
