@@ -165,6 +165,21 @@ The hosted web version demonstrates the Mission Control interface using simulate
 - Add packet timestamps, validation, and communication-loss detection
 - Expand hardware interfaces for additional CubeSat subsystems
 
+## ADCS telemetry demo
+
+Mission Control displays pointing angles from a recorded Simulink run. A separate Python process sends the samples over HTTP so you can test how the dashboard responds when telemetry stops and resumes.
+
+1. From the project folder, start Flask:
+
+   ```bash
+   python -m flask --app app run --port 5002
+   ```
+
+2. Open `http://127.0.0.1:5002` and click **Start monitoring** under **Incoming Telemetry**.
+3. In a second terminal, run `python send_adcs.py`. The green chart should update and show **Receiving telemetry**.
+4. Press `Ctrl+C` in the sender terminal while it’s still running. After about three seconds without new samples, the feed should show as stale.
+5. Run `python send_adcs.py` again. The chart should resume updating without a browser refresh.
+
 ## Author
 
 Chancellor Delk  
