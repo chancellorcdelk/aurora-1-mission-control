@@ -4,6 +4,8 @@ AURORA-1 is a CubeSat systems-engineering project that combines spacecraft desig
 
 The local application receives a live analog signal from an Arduino UNO R4 WiFi over USB serial, converts the reading into temperature telemetry, and displays spacecraft status, subsystem health, event logs, and fault alerts. When hardware is unavailable, the application falls back to simulated telemetry so the deployed web demonstration remains usable.
 
+[Explore the AURORA-1 CubeSat design and simulation](https://github.com/chancellorcdelk/Aurora-1-CubeSat)
+
 ## Demo
 
 [Watch the AURORA‑1 Mission Control demo](https://www.youtube.com/watch?v=CvdcDvqdmos)
